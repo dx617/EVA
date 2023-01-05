@@ -197,6 +197,26 @@ SEALSecret
     WARNING: This object holds your generated secret key. Do not share this object
               (or its serialized form) with anyone you do not want having access
               to the values encrypted with the public context.)DELIMITER", py::arg("absract_params"));
+  mseal.def("recover_keys", &recoverKeys, R"DELIMITER(Recover keys required for evaluation with SEAL
+
+Parameters
+----------
+polyModulusDegree : int
+    The polyModulusDegree parameter
+primeBits : list of int
+    The primeBits parameter
+encodedPublicKey : string
+    Base64-encoded PublicKey
+encodedGaloisKey : string
+    Base64-encoded GaloisKey
+encodedRelinKey : string
+    Base64-encoded RelinKey
+
+Returns
+-------
+SEALPublic
+    The public part of the SEAL context that is used for encryption and execution.)DELIMITER", py::arg("polyModulusDegree"),
+    py::arg("primeBits"), py::arg("encodedPublicKey"), py::arg("encodedGaloisKey"), py::arg("encodedRelinKey"));
   py::class_<SEALValuation>(mseal, "SEALValuation", "A valuation for inputs or outputs holding values encrypted with SEAL");
   py::class_<SEALPublic>(mseal, "SEALPublic", "The public part of the SEAL context that is used for encryption and execution.")
     .def("encrypt", &SEALPublic::encrypt, R"DELIMITER(Encrypt inputs for a compiled EVA program

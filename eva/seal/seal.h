@@ -96,4 +96,10 @@ seal::SEALContext getSEALContext(const seal::EncryptionParameters &params);
 std::tuple<std::unique_ptr<SEALPublic>, std::unique_ptr<SEALSecret>>
 generateKeys(const CKKSParameters &abstractParams);
 
+std::unique_ptr<SEALPublic> recoverKeys(const std::uint32_t &polyModulusDegree,
+                                        const std::vector<std::uint32_t> &primeBits,
+                                        const std::string &encodedPublicKey,
+                                        const std::string &encodedGaloisKey,
+                                        const std::string &encodedRelinKey);
+
 } // namespace eva

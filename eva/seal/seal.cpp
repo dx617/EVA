@@ -6,6 +6,7 @@
 #include "eva/common/valuation.h"
 #include "eva/seal/seal_executor.h"
 #include "eva/util/logging.h"
+#include "base64.h"
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -200,6 +201,42 @@ generateKeys(const CKKSParameters &abstractParams) {
       make_unique<SEALPublic>(context, public_key, galois_keys, relin_keys);
 
   return make_tuple(move(publicCtx), move(secretCtx));
+}
+
+std::unique_ptr<SEALPublic> recoverKeys(const std::uint32_t &polyModulusDegree,
+                                        const std::vector<std::uint32_t> &primeBits,
+                                        const std::string &encodedPublicKey,
+                                        const std::string &encodedGaloisKey,
+                                        const std::string &encodedRelinKey) {
+  vector<int> logQs(primeBits.begin(), primeBits.end());
+
+  auto params = seal::EncryptionParameters(seal::scheme_type::ckks);
+  params.set_poly_modulus_degree(polyModulusDegree);
+  params.set_coeff_modulus(
+      seal::CoeffModulus::Create(polyModulusDegree, logQs));
+
+  auto context = getSEALContext(params);
+
+  seal::PublicKey public_key;
+  seal::GaloisKeys galois_keys;
+  seal::RelinKeys relin_keys;
+
+  std::string decodedPublicKey = b64decode(encodedPublicKey);
+  std::istringstream isPublicKey(decodedPublicKey);
+  public_key.load(context, isPublicKey);
+
+  std::string decodedGaloisKey = b64decode(encodedGaloisKey);
+  std::istringstream isGaloisKey(decodedGaloisKey);
+  galois_keys.load(context, isGaloisKey);
+
+  std::string decodedRelinKey = b64decode(encodedRelinKey);
+  std::istringstream isRelinKey(decodedRelinKey);
+  relin_keys.load(context, isRelinKey);
+
+  auto publicCtx =
+      make_unique<SEALPublic>(context, public_key, galois_keys, relin_keys);
+
+  return move(publicCtx);
 }
 
 } // namespace eva

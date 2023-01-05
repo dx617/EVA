@@ -21,7 +21,7 @@ if(USE_GALOIS)
   add_definitions(-DEVA_USE_GALOIS)
 endif()
 
-find_package(SEAL 3.6 REQUIRED)
+find_package(SEAL 4.0 REQUIRED)
 find_package(Protobuf 3.6 REQUIRED)
 find_package(Python COMPONENTS Interpreter Development)
 
