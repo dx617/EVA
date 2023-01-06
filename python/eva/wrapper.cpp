@@ -232,6 +232,19 @@ Returns
 -------
 SEALValuation
     The encrypted inputs)DELIMITER", py::arg("inputs"), py::arg("signature"))
+    .def("recover_encrypted", &SEALPublic::recoverEncrypted, R"DELIMITER(Recover encrypted inputs from base64-encoded strings
+
+Parameters
+----------
+encoded_enc_inputs : std::unordered_map<std::string, std::string>
+    Base64-encoded encrypted inputs to be recovered
+signature : CKKSSignature
+    The signature of the program the inputs are being encrypted for
+
+Returns
+-------
+SEALValuation
+    The encrypted inputs)DELIMITER", py::arg("encoded_enc_inputs"), py::arg("signature"))
     .def("execute", &SEALPublic::execute, R"DELIMITER(Execute a compiled EVA program with SEAL
 
 Parameters
@@ -244,7 +257,18 @@ inputs : SEALValuation
 Returns
 -------
 SEALValuation
-    The encrypted outputs)DELIMITER", py::arg("program"), py::arg("inputs"));
+    The encrypted outputs)DELIMITER", py::arg("program"), py::arg("inputs"))
+    .def("encode_encrypted", &SEALPublic::encodeEncrypted, R"DELIMITER(Encode encrypted outputs to base64-encoded strings
+
+Parameters
+----------
+encryptedOutputs : SEALValuation
+    The encrypted valuation for the outputs of the program
+
+Returns
+-------
+std::unordered_map<std::string, std::string>
+    Base64-encoded encrypted outputs)DELIMITER", py::arg("encryptedOutputs"));
   py::class_<SEALSecret>(mseal, "SEALSecret", R"DELIMITER(The secret part of the SEAL context that is used for decryption.
 
 WARNING: This object holds your generated secret key. Do not share this object

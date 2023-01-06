@@ -102,6 +102,39 @@ SEALValuation SEALPublic::encrypt(const Valuation &inputs,
   return sealInputs;
 }
 
+SEALValuation SEALPublic::recoverEncrypted(const std::unordered_map<std::string, std::string> &encodedEncryptedInputs,
+                                           const CKKSSignature &signature) {
+  SEALValuation sealInputs(context);
+
+  for (auto &in : encodedEncryptedInputs) {
+    auto name = in.first;
+    auto &v = in.second;
+    auto info = signature.inputs.at(name);
+    if (info.inputType == Type::Cipher) {
+      seal::Ciphertext cipher;
+
+      std::string decoded = b64decode(v);
+      std::istringstream is(decoded);
+      cipher.load(context, is);
+
+      sealInputs[name] = move(cipher);
+    } else if (info.inputType == Type::Plain) {
+      seal::Plaintext plain;
+
+      std::string decoded = b64decode(v);
+      std::istringstream is(decoded);
+      plain.load(context, is);
+
+      sealInputs[name] = move(plain);
+    } else {
+      // ConstantValue
+      throw runtime_error("Not sure how to handle constant value yet");
+    }
+  }
+
+  return sealInputs;
+}
+
 SEALValuation SEALPublic::execute(Program &program,
                                   const SEALValuation &inputs) {
 #ifdef EVA_USE_GALOIS
@@ -122,6 +155,31 @@ SEALValuation SEALPublic::execute(Program &program,
   return encOutputs;
 }
 
+std::unordered_map<std::string, std::string> SEALPublic::encodeEncrypted(const SEALValuation &encryptedOutputs) {
+  std::unordered_map<std::string, std::string> encoded;
+  for (auto &out : encryptedOutputs) {
+    auto name = out.first;
+    visit(Overloaded{[&](const seal::Ciphertext &cipher) {
+                      std::ostringstream buffer;
+                      cipher.save(buffer);
+                      std::string contents = buffer.str();
+                      encoded[name] = b64encode(contents);
+                    },
+                    [&](const seal::Plaintext &plain) {
+                      std::ostringstream buffer;
+                      plain.save(buffer);
+                      std::string contents = buffer.str();
+                      encoded[name] = b64encode(contents);
+                    },
+                    [&](const std::shared_ptr<ConstantValue> &raw) {
+                      // ConstantValue
+                      throw runtime_error("Not sure how to handle constant value yet");
+                    }},
+          out.second);
+  }
+  return encoded;
+}
+
 Valuation SEALSecret::decrypt(const SEALValuation &encOutputs,
                               const CKKSSignature &signature) {
   Valuation outputs;
@@ -129,17 +187,17 @@ Valuation SEALSecret::decrypt(const SEALValuation &encOutputs,
   for (auto &out : encOutputs) {
     auto name = out.first;
     visit(Overloaded{[&](const seal::Ciphertext &cipher) {
-                       seal::Plaintext plain;
-                       decryptor.decrypt(cipher, plain);
-                       encoder.decode(plain, outputs[name]);
-                     },
-                     [&](const seal::Plaintext &plain) {
-                       encoder.decode(plain, outputs[name]);
-                     },
-                     [&](const std::shared_ptr<ConstantValue> &raw) {
-                       auto &scratch = tempVec;
-                       outputs[name] = raw->expand(scratch, signature.vecSize);
-                     }},
+                      seal::Plaintext plain;
+                      decryptor.decrypt(cipher, plain);
+                      encoder.decode(plain, outputs[name]);
+                    },
+                    [&](const seal::Plaintext &plain) {
+                      encoder.decode(plain, outputs[name]);
+                    },
+                    [&](const std::shared_ptr<ConstantValue> &raw) {
+                      auto &scratch = tempVec;
+                      outputs[name] = raw->expand(scratch, signature.vecSize);
+                    }},
           out.second);
     outputs.at(name).resize(signature.vecSize);
   }

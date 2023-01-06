@@ -52,7 +52,12 @@ public:
   SEALValuation encrypt(const Valuation &inputs,
                         const CKKSSignature &signature);
 
+  SEALValuation recoverEncrypted(const std::unordered_map<std::string, std::string> &encodedEncryptedInputs,
+                                 const CKKSSignature &signature);
+
   SEALValuation execute(Program &program, const SEALValuation &inputs);
+
+  std::unordered_map<std::string, std::string> encodeEncrypted(const SEALValuation &encryptedOutputs);
 
 private:
   seal::SEALContext context;
